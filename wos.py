@@ -75,7 +75,11 @@ class Search(WOS):
         if editions is not None:
             qp.editions = kwargs.get('editions', editions)
 
-        #Time span
+        #Time spans
+        tspan = kwargs.get('timeSpan')
+        if tspan is not None:
+            qp.timeSpan = tspan
+
         sym_time_span = kwargs.get('symbolicTimeSpan')
         if sym_time_span is not None:
             qp.symbolicTimeSpan = sym_time_span
@@ -97,12 +101,11 @@ class Search(WOS):
             queryLanguage='en',
             retrieveParameters=rp
         )
-        #doc = Result(rsp.records[0])
         return rsp
 
 
 
-class Result(object):
+class Record(object):
     """
     Single WOS result in a more useable form.
     """
@@ -207,8 +210,8 @@ if __name__ == "__main__":
     import json
     ws = Search()
     ws.login()
-    rsp = ws.search('AD=02912', number=2)
+    rsp = ws.search('AD=Brown Univ*', number=2)
     for rec in rsp.records:
-        doc = Result(rec).as_dict()
+        doc = Record(rec).as_dict()
         print json.dumps(doc, indent=2)
-    ws.logout()
+    #ws.logout()

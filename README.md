@@ -8,14 +8,14 @@ Client code for the Web of Science API.
 
 
 ##usage
-`
+```
 import json
 ws = Search()
 ws.login()
 rsp = ws.search('AD=Brown Univ*', number=2)
 for rec in rsp.records:
-    doc = Result(rec).as_dict()
+    doc = Record(rec).as_dict()
     print json.dumps(doc, indent=2)
 ws.logout()
-`
+```
 
