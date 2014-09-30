@@ -48,7 +48,7 @@ class WOS(object):
 
 class Search(WOS):
 
-    def search(self, query, **kwargs):
+    def search(self, query, sort_by_date=False, **kwargs):
         """
         Run a search.
         """
@@ -56,12 +56,16 @@ class Search(WOS):
         rp = self.client.factory.create('retrieveParameters')
         rp.firstRecord = kwargs.get('start', 1)
         rp.count = kwargs.get('number', 100)
-        default_sort = {
-            #load date
-            'name': 'LD',
-            #descending
-            'sort': 'D'
-        }
+
+        if sort_by_date is True:
+            default_sort = {
+                #load date
+                'name': 'LD',
+                #descending
+                'sort': 'D'
+            }
+        else:
+            default_sort = {}
         rp.sortField = kwargs.get('sortField', default_sort)
 
         #Query params.
