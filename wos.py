@@ -73,10 +73,11 @@ class Search(WOS):
             try:
                 more = self.client.service.retrieve(first_response.queryId, retreive_params)
                 records += more.records
-            except suds.WebFault:
+            except suds.WebFault, e:
                 #Cause: The following input is invalid [RetrieveParameter
                 #firstRecord: 301  exceeds  recordsFound: 296 after deduping first 301 results].
                 #Remedy: Correct your request and submit it again
+                logging.debug(e)
                 logging.debug('Fetch failed.  Possibly because of duplicate records error.')
                 pass
         return records
