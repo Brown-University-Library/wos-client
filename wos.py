@@ -8,13 +8,14 @@ http://wokinfo.com/media/pdf/WebServicesLiteguide.pdf
 #For SOAP
 import suds
 from suds.client import Client
+import time
 
 import logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-logger.addHandler(ch)
+#ch = logging.StreamHandler()
+#ch.setLevel(logging.DEBUG)
+#logger.addHandler(ch)
 
 logging.getLogger('suds.client').setLevel(logging.ERROR)
 
@@ -23,6 +24,10 @@ search_url = 'http://search.webofknowledge.com/esti/wokmws/ws/WokSearchLite?wsdl
 
 #WOK OpenURL template.
 wok_openurl = 'http://ws.isiknowledge.com/cps/openurl/service?url_ver=Z39.88-2004&rft_id=info:ut/{0}'
+
+#Delay in seconds between queries when fetching all records
+DELAY=2
+
 
 class WOS(object):
 
@@ -48,7 +53,28 @@ class WOS(object):
 
 class Search(WOS):
 
-    def search(self, query, sort_by_date=False, **kwargs):
+    def _get_all(self, first_response, retreive_params):
+        """
+        Walk through the results and get all of the records.
+        """
+        records = []
+        num_found = first_response.recordsFound
+        pages =  num_found / retreive_params.count
+        #Add one if there is a remainder
+        if num_found % retreive_params.count > 0:
+            pages += 1
+        logger.debug("Found {} records.  Fetching {} pages.".format(num_found, pages))
+        for set_num in range(1, pages):
+            logger.debug("Getting page {}".format(set_num + 1))
+            retreive_params.firstRecord += retreive_params.count
+            logger.debug("Pausing {} seconds between requests.".format(DELAY))
+            time.sleep(DELAY)
+            more = self.client.service.retrieve(first_response.queryId, retreive_params)
+            records += more.records
+        return records
+
+
+    def search(self, query, sort_by_date=False, get_all=False, **kwargs):
         """
         Run a search.
         """
@@ -70,7 +96,7 @@ class Search(WOS):
 
         #Query params.
         qp = self.client.factory.create('queryParameters')
-        qp.databaseId = 'WOS'
+        qp.databaseId = kwargs.get('databaseId', 'WOK')
         qp.userQuery = query
         qp.queryLanguage = 'en'
 
@@ -89,6 +115,16 @@ class Search(WOS):
             qp.symbolicTimeSpan = sym_time_span
 
         results = self.client.service.search(qp, rp)
+
+        num_found = results.recordsFound
+        if num_found == 0:
+            return []
+
+        #Fetch all the records if get_all is True and more
+        #records were found than the initial limit.
+        if (get_all is True) and (num_found > rp.count):
+            #Extend the initial records with all we found.
+            results.records.extend(self._get_all(results, rp))
         return results
 
     def get(self, uid, **kwargs):
@@ -100,7 +136,7 @@ class Search(WOS):
         rp.count = 2
 
         rsp = self.client.service.retrieveById(
-            databaseId='WOS',
+            databaseId='WOK',
             uid=uid,
             queryLanguage='en',
             retrieveParameters=rp
