@@ -127,6 +127,7 @@ class Search(WOS):
         results = self.client.service.search(qp, rp)
 
         num_found = results.recordsFound
+        logging.debug("Found {} records.".format(num_found))
         if num_found == 0:
             return []
 
