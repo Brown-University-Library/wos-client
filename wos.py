@@ -11,8 +11,8 @@ from suds.client import Client
 import time
 
 import logging
-logger = logging.getLogger(__name__)
-
+from logging import NullHandler
+logging.getLogger(__name__).addHandler(NullHandler())
 logging.getLogger('suds').setLevel(logging.ERROR)
 
 
@@ -61,14 +61,14 @@ class Search(WOS):
         #Add one if there is a remainder
         if num_found % retreive_params.count > 0:
             pages += 1
-        logger.debug("Found {} records.  Fetching {} pages.".format(num_found, pages))
+        logging.debug("Found {} records.  Fetching {} pages.".format(num_found, pages))
         for set_num in range(1, pages):
-            logger.debug("Getting page {}".format(set_num + 1))
+            logging.debug("Getting page {}".format(set_num + 1))
             retreive_params.firstRecord += retreive_params.count
             #Stop if we have reached the end.
             if retreive_params.firstRecord > num_found:
                 break
-            logger.debug("Pausing {} seconds between requests.".format(DELAY))
+            logging.debug("Pausing {} seconds between requests.".format(DELAY))
             time.sleep(DELAY)
             try:
                 more = self.client.service.retrieve(first_response.queryId, retreive_params)
@@ -77,7 +77,7 @@ class Search(WOS):
                 #Cause: The following input is invalid [RetrieveParameter
                 #firstRecord: 301  exceeds  recordsFound: 296 after deduping first 301 results].
                 #Remedy: Correct your request and submit it again
-                logger.debug('Fetch failed.  Possibly because of duplicate records error.')
+                logging.debug('Fetch failed.  Possibly because of duplicate records error.')
                 pass
         return records
 
@@ -86,6 +86,7 @@ class Search(WOS):
         """
         Run a search.
         """
+        logging.debug("Sending query {} to WOS.".format(query))
         #Retrieve params
         rp = self.client.factory.create('retrieveParameters')
         rp.firstRecord = kwargs.get('start', 1)
