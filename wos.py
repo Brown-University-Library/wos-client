@@ -12,12 +12,10 @@ import time
 
 import logging
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-#ch = logging.StreamHandler()
-#ch.setLevel(logging.DEBUG)
-#logger.addHandler(ch)
 
-logging.getLogger('suds.client').setLevel(logging.ERROR)
+logging.getLogger('suds').setLevel(logging.ERROR)
+
+
 
 auth_url = 'http://search.webofknowledge.com/esti/wokmws/ws/WOKMWSAuthenticate?wsdl'
 search_url = 'http://search.webofknowledge.com/esti/wokmws/ws/WokSearchLite?wsdl'
@@ -26,7 +24,7 @@ search_url = 'http://search.webofknowledge.com/esti/wokmws/ws/WokSearchLite?wsdl
 wok_openurl = 'http://ws.isiknowledge.com/cps/openurl/service?url_ver=Z39.88-2004&rft_id=info:ut/{0}'
 
 #Delay in seconds between queries when fetching all records
-DELAY=2
+DELAY = 2
 
 
 class WOS(object):
@@ -67,10 +65,20 @@ class Search(WOS):
         for set_num in range(1, pages):
             logger.debug("Getting page {}".format(set_num + 1))
             retreive_params.firstRecord += retreive_params.count
+            #Stop if we have reached the end.
+            if retreive_params.firstRecord > num_found:
+                break
             logger.debug("Pausing {} seconds between requests.".format(DELAY))
             time.sleep(DELAY)
-            more = self.client.service.retrieve(first_response.queryId, retreive_params)
-            records += more.records
+            try:
+                more = self.client.service.retrieve(first_response.queryId, retreive_params)
+                records += more.records
+            except suds.WebFault:
+                #Cause: The following input is invalid [RetrieveParameter
+                #firstRecord: 301  exceeds  recordsFound: 296 after deduping first 301 results].
+                #Remedy: Correct your request and submit it again
+                logger.debug('Fetch failed.  Possibly because of duplicate records error.')
+                pass
         return records
 
 
@@ -234,10 +242,14 @@ class Record(object):
         d['volume'] = sm.get('Volume')
         d['venue'] = sm.get('SourceTitle')
         pages = sm.get('Pages')
+        d['pages'] = pages
         if pages is not None:
-            start, end = pages.split('-')
-            d['start'] = start
-            d['end'] = end
+            try:
+                start, end = pages.split('-')
+                d['start'] = start
+                d['end'] = end
+            except ValueError:
+                pass
         d['date'] = sm.get('Published.BiblioYear')
         d['url'] = wok_openurl.format(d['id'])
         d['keywords'] = self.keywords()
