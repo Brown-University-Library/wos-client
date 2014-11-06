@@ -1,1 +1,1 @@
-import wos
+from wos import Search, Record
