@@ -57,7 +57,7 @@ class Search(WOS):
         """
         records = []
         num_found = first_response.recordsFound
-        pages =  num_found / retreive_params.count
+        pages =  num_found // retreive_params.count
         #Add one if there is a remainder
         if num_found % retreive_params.count > 0:
             pages += 1
@@ -73,7 +73,7 @@ class Search(WOS):
             try:
                 more = self.client.service.retrieve(first_response.queryId, retreive_params)
                 records += more.records
-            except suds.WebFault, e:
+            except suds.WebFault as e:
                 #Cause: The following input is invalid [RetrieveParameter
                 #firstRecord: 301  exceeds  recordsFound: 296 after deduping first 301 results].
                 #Remedy: Correct your request and submit it again
@@ -188,7 +188,7 @@ class Record(object):
     def keywords(self):
         try:
             return self.record.keywords[0].value
-        except:
+        except Exception:
             return []
 
     def _source(self):
@@ -205,12 +205,12 @@ class Record(object):
         for meta in self.record.other:
             if meta.label == 'Identifier.Doi':
                 try:
-                    d['doi'] = unicode(meta.value[0])
+                    d['doi'] = str(meta.value[0])
                 except IndexError:
                     pass
             elif meta.label == 'Identifier.Issn':
                 try:
-                    d['issn'] = unicode(meta.value[0])
+                    d['issn'] = str(meta.value[0])
                 except IndexError:
                     pass
         return d
@@ -268,5 +268,5 @@ if __name__ == "__main__":
     rsp = ws.search('AD=Brown Univ*', number=2)
     for rec in rsp.records:
         doc = Record(rec).as_dict()
-        print json.dumps(doc, indent=2)
+        print(json.dumps(doc, indent=2))
     #ws.logout()
