@@ -7,5 +7,5 @@ setup(
     license='MIT',
     packages=['wos'],
     zip_safe=False,
-    install_requires=['suds'],
+    install_requires=['suds-py3'],
 )

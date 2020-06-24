@@ -14,7 +14,7 @@ rsp = ws.search('AD=02912', number=10, timeSpan=tspan, get_all=True)
 
 for rec in rsp.records:
     doc = Record(rec).as_dict()
-    print json.dumps(doc, indent=2)
+    print(json.dumps(doc, indent=2))
 
 ws.logout()
 
